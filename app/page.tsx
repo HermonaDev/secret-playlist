@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef } from 'react';
-import html2canvas from 'html2canvas';
+import html2canvas from 'html2canvas-pro';
 
 export default function SpotifyVibeApp() {
   const [message, setMessage] = useState("");
@@ -29,18 +29,30 @@ export default function SpotifyVibeApp() {
     }
   };
 
-  const downloadReceipt = async () => {
-    if (receiptRef.current) {
+ // 1. Make sure your function looks like this
+const downloadReceipt = async () => {
+  if (receiptRef.current) {
+    try {
       const canvas = await html2canvas(receiptRef.current, {
-        backgroundColor: "#121212",
-        scale: 2,
+        backgroundColor: "#090909", // Matches your Spotify dark theme
+        scale: 2, // Makes the image crisp and high-res
+        useCORS: true, // Allows capturing external images (like the barcode)
+        logging: false,
       });
-      const link = document.createElement('a');
-      link.download = `vibe-manifest.png`;
-      link.href = canvas.toDataURL('image/png');
+      
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = image;
+      link.download = `playlist-manifest-${Date.now()}.png`;
       link.click();
+    } catch (err) {
+      console.error("Download failed:", err);
+      alert("Failed to generate image. Try again.");
     }
-  };
+  } else {
+    console.error("Receipt element not found!");
+  }
+};
 
   // The "AI Engineer" Workaround: Search Link Generator
   const getSearchUrl = (song: string, artist: string) => {
@@ -101,8 +113,7 @@ export default function SpotifyVibeApp() {
         {/* The Result Card */}
         {playlist?.length > 0 && (
           <div className="animate-in fade-in slide-in-from-bottom-10 duration-700">
-            <div ref={receiptRef} className="bg-gradient-to-b from-[#222] to-[#121212] p-8 rounded-sm shadow-2xl border border-white/10 relative">
-              
+            <div ref={receiptRef} className="bg-gradient-to-b from-[#222] to-[#121212] ...">              
               {/* Header Info */}
               <div className="flex flex-col md:flex-row items-center md:items-end gap-8 mb-10">
                 <div className="w-56 h-56 bg-gradient-to-br from-[#282828] to-[#121212] flex items-center justify-center text-8xl font-black text-[#1DB954] shadow-2xl border border-white/5">

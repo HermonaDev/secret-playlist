@@ -5,7 +5,11 @@ export async function POST(req: Request) {
     const { message, vibe } = await req.json();
     const apiKey = process.env.GEMINI_API_KEY;
 
-    // STEP 1: ASK GOOGLE WHAT MODELS YOU HAVE
+    if (!apiKey) {
+      return NextResponse.json({ error: "API Key missing" }, { status: 500 });
+    }
+
+    // STEP 1: ASK GOOGLE WHAT MODELS YOU HAVE ACCESS TO
     const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
     const listRes = await fetch(listUrl);
     const listData = await listRes.json();
@@ -16,15 +20,16 @@ export async function POST(req: Request) {
     );
 
     if (!availableModel) {
-      return NextResponse.json({ error: "No models found for this key" }, { status: 500 });
+      console.error("No models found. Response:", listData);
+      return NextResponse.json({ error: "No models found for this key/region" }, { status: 500 });
     }
 
     console.log("SUCCESS! Using discovered model:", availableModel.name);
 
-    // STEP 2: USE THE DISCOVERED MODEL NAME
+    // STEP 2: USE THE DISCOVERED MODEL NAME DYNAMICALLY
     const prompt = `
-      Act as a "Passive-Aggressive Playlist Architect". 
-      Create a playlist where the FIRST LETTER of each song title spells: "${message}".
+      Act as a "Spotify Playlist Architect". 
+      Create a playlist where the FIRST LETTER of each song title spells out: "${message}".
       The musical vibe must be: "${vibe}".
       Return ONLY a raw JSON object. No markdown.
       Format: {"playlist": [{"letter": "S", "song": "Song Name", "artist": "Artist"}], "description": "text"}
@@ -41,15 +46,22 @@ export async function POST(req: Request) {
     });
 
     const result = await response.json();
+    
+    // Check if the generation itself failed
+    if (!result.candidates) {
+      return NextResponse.json({ error: "Generation failed" }, { status: 500 });
+    }
+
     const aiText = result.candidates[0].content.parts[0].text;
     
+    // Clean JSON extraction
     const jsonStart = aiText.indexOf('{');
     const jsonEnd = aiText.lastIndexOf('}') + 1;
     const jsonString = aiText.substring(jsonStart, jsonEnd);
 
     return NextResponse.json(JSON.parse(jsonString));
-  } catch (error) {
+  } catch (error: any) {
     console.error("Total Failure:", error);
-    return NextResponse.json({ playlist: [], description: "Still searching for a signal..." }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
