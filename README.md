@@ -1,6 +1,6 @@
 # 🎵 Vibe_Architect
 
-![Vibe_Architect Demo](./assets/image.png)
+![Vibe_Architect Demo](./assets/demo_image.png)
 **A Next.js 16 + Gemini-powered playlist generator that hides secret messages in your music.**
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com)
